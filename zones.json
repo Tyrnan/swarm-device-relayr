@@ -1,0 +1,1 @@
+{"A": {"criteria": [{"value": 1000, "type": "gt", "node_id": 2}, {"value": 350, "type": "lt", "node_id": 3}], "message": "No-Go!", "color": "#FF0000"}}
