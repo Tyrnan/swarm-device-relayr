@@ -23,6 +23,7 @@ import sys
 import serial
 from SwarmResultParser import SwarmResultParser
 from DistanceData import DistanceData
+import script
 
 def main():
     try:
@@ -45,41 +46,42 @@ def main():
         print("Serial Connection error" + se.message)
         return
 
-    try:
+    #try:
+    print("BEGIN")
+    script.load_zones()
+    parser = SwarmResultParser()
+    measurements = dict()
+    while True:
+        #client.loop()
 
-        print("BEGIN")
-        parser = SwarmResultParser()
-        measurements = dict()
-        while True:
-            #client.loop()
+        line = ser.readline()
+        result = parser.parse_result(line.splitlines(True))
 
-            line = ser.readline()
-            result = parser.parse_result(line.splitlines(True))
+        for res in result:
+            #print(res.type())
+            if res.type() == "RRN":
+                # publish data
+                if not res.data:
+                    continue
+                vals = res.data()[0].strip("\r\n").split(",")
+                if len(vals) < 4:
+                    continue
+                if int(vals[2]) != 0:
+                    continue
+                if int(vals[0], 16) != my_id:
+                    continue
+                dest = int(vals[1], 16)
+                if not dest in measurements:
+                    measurements[dest] = DistanceData(dest, 20)
 
-            for res in result:
-                #print(res.type())
-                if res.type() == "RRN":
-                    # publish data
-                    if not res.data:
-                        continue
-                    vals = res.data()[0].strip("\r\n").split(",")
-                    if len(vals) < 4:
-                        continue
-                    if int(vals[2]) != 0:
-                        continue
-                    if int(vals[0], 16) != my_id:
-                        continue
-                    dest = int(vals[1], 16)
-                    if not dest in measurements:
-                        measurements[dest] = DistanceData(dest)
-
-                    measurements[dest].add_observation(int(vals[3]))
-                    res = {'node_id': dest, 'distance': measurements[dest].get_filtered_value()}
-                    print(json.dumps(res))
-                    time.sleep(1)
-    except Exception, e:
-        print("Exception occurred" + e.message)
-        exit(-1)
+                measurements[dest].add_observation(int(vals[3]))
+                res = {'node_id': dest, 'distance': measurements[dest].get_filtered_value()}
+                print(json.dumps(res))
+                #script.handle_data(res)
+                time.sleep(1)
+    #except Exception, e:
+    #    print("Exception occurred" + e.message)
+    #    exit(-1)
 
 
 if __name__ == '__main__':

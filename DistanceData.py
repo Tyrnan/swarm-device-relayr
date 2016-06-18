@@ -14,4 +14,6 @@ class DistanceData:
 
     def get_filtered_value(self):
         #TODO implement filtering
-        return self.buffer.get()[-1]
+        curr_vals = self.buffer.get()
+        curr_vals.sort()
+        return curr_vals[len(curr_vals)/2]
