@@ -72,12 +72,12 @@ def main():
                     continue
                 dest = int(vals[1], 16)
                 if not dest in measurements:
-                    measurements[dest] = DistanceData(dest, 20)
+                    measurements[dest] = DistanceData(dest, 10)
 
                 measurements[dest].add_observation(int(vals[3]))
                 res = {'node_id': dest, 'distance': measurements[dest].get_filtered_value()}
-                print(json.dumps(res))
-                #script.handle_data(res)
+                #print(json.dumps(res))
+                script.handle_data(res)
                 time.sleep(1)
     #except Exception, e:
     #    print("Exception occurred" + e.message)

@@ -2,23 +2,28 @@ from __future__ import print_function
 from six import iteritems
 import json
 from time import strftime, sleep
-root = "E:\\Projects\swarm-relayr\\"
-template_filename = root + "template.html"
+
+root = "E:\\Projects\\swarm-relayr\\"
+template_filename = "template.html"
 output_filename = root + "index.html"
 zones_filename = root + "zones.json"
-data_list = {}
+
 zones = {}
+data_list = {}
+fake_data = []
+i = -1
+
 
 def handle_data(data):
-    print("handle_data", data)
     global template_filename
     global output_filename
     global zones
     global data_list
-
-    #if data["node_id"] in data_list:
+    
     data_list[data["node_id"]] = data["distance"]
-
+    print("data_list:")
+    print(json.dumps(data_list))
+    
     template = load_html_template(template_filename)
     zone_id = detect_zone(data_list, zones)
     if zone_id is not None:
@@ -33,25 +38,33 @@ def handle_data(data):
 def detect_zone(data, zones):
     for id in zones:
         print("Am I in zone " + id + "?")
+        
+        print(json.dumps(data))
+        
         current = zones[id]
         criteria = current["criteria"]
         detected = True
         
         for item in criteria:
+            print(json.dumps(criteria))
             detected = detected and is_match(data, item)
             if not detected:
-                print("Nope!")
+                print("Criterium does not match data!")
                 break
                 
         if not detected:
             print("Trying next zone...")
             continue
         else:
+            print("====================================")
             print("Zone detected: " + id)
+            print("====================================")
             return id
             
     if not detected:
+        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         print("I am in No Man's Land!")
+        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         return None
             
 def is_match(data, criterium):
@@ -60,25 +73,48 @@ def is_match(data, criterium):
     value = criterium["value"]
     
     result = True
-    print(json.dumps(data))
-    print(json.dumps(criterium))
-    for item_node_id, distance in iteritems(data):
-        if node_id == item_node_id:
-            if type == "lt":
-                result = result and (distance < value)
-            elif type == "gt":
-                result = result and (distance > value)
-            elif type == "lteq":
-                result = result and (distance <= value) 
-            elif type == "gteq":
-                result = result and (distance >= value)
+    print(str(node_id) + " in data?")
+    if node_id in data:
+        distance = data[node_id]
+        print("Yes")
+        if type == "lt":
+            print(str(distance) + " < " + str(value) + "?")
+            print(distance < value)
+            result = result and (distance < value)
+            print(result)
+            if result:
+                print("Yes")
             else:
-                print("Unknown operation: " + type)
+                print("No")
+        elif type == "gt":
+            print(str(distance) + " >" + str(value) + "?")
+            result = result and (distance > value)
+            print(distance > value)
+            print(result)
+            if result:
+                print("Yes")
+            else:
+                print("No")
+        elif type == "lteq":
+            print(str(distance) + " <= " + str(value) + "?")
+            result = result and (distance <= value) 
+            if result:
+                print("Yes")
+            else:
+                print("No")
+        elif type == "gteq":
+            print(str(distance) + " >= " + str(value) + "?")
+            result = result and (distance >= value)
+            if result:
+                print("Yes")
+            else:
+                print("No")
         else:
-            result = False
-    if result:
-        print("JA!")
-    return result
+            print("Unknown operation: " + type)
+            
+        return result
+    else:
+        return False
     
     
 def load_zones():
@@ -90,7 +126,19 @@ def load_zones():
         
 
 def load_fake_data():
-    return {"1": 140.5, "2": 350.7, "3": 560.1}
+    global fake_data
+    global i
+    
+    if i < 0:
+        with open("C:\\Users\\aw16246\\Documents\\Projekte\\mindbox hackday 2016\\log.txt") as f:
+            fake_data = f.readlines()
+        i = 0
+        
+    result = json.loads(fake_data[i])
+    print(json.dumps(result))
+    i = i+1
+    return result
+    #return {645456: 140.5, 678678: 350.7, 67678678: 560.1}
     
 def load_html_template(filename):
     with open(filename) as f:
