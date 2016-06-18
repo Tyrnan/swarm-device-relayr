@@ -29,6 +29,7 @@ from credentials import creds
 # will kick you out
 publishing_period = 500
 
+
 class ResultData(object):
     __slots__ = ['__timestamp', '__type', '__data', '__opcode']
 
@@ -153,26 +154,58 @@ def main(credentials, publishing_period):
         print("Serial Connection error" + se.message)
         return
 
-    while True:
-        client.loop()
+    try:
         parser = SwarmResultParser()
+        while True:
+            #client.loop()
 
-        line = ser.readline()
-        result = parser.parse_result(line.splitlines(True))
+            line = ser.readline()
+            result = parser.parse_result(line.splitlines(True))
 
-        for res in result:
-            print(res.type())
-            if res.type() == "RRN":
-                # publish data
-                message = {
-                    'meaning': 'rangingResult',
-                    'value': res.data()
-                }
-                print(message)
-                client.publish(credentials['topic'] + 'data', json.dumps(message))
+            for res in result:
+                #print(res.type())
+                if res.type() == "RRN":
+                    # publish data
+                    if not res.data:
+                        continue
+                    vals = res.data()[0].strip("\r\n").split(",")
+                    if len(vals) < 4:
+                        continue
+                    if int(vals[2]) != 0:
+                        continue
+                    message = [
+                        {
+                            'meaning': 'source',
+                            'value': int(vals[0], 16)
+                        },
+                        {
+                            'meaning': 'dest',
+                            'value': int(vals[1], 16)
+                        },
+                        {
+                            'meaning': 'distance',
+                            'value': int(vals[3])
+                        },
+                        {
+                            'meaning': 'rssi',
+                            'value': int(vals[5])
+                        },
+                        {
+                            'meaning': 'blinkId',
+                            'value': int(vals[6])
+                        },
+                        {
+                            'meaning': 'timestamp',
+                            'value': int(vals[7])
+                        }
+                    ]
+                    print(json.dumps(message))
+                    #client.publish(credentials['topic'] + 'data', json.dumps(message))
 
-                time.sleep(publishing_period / 1000.)
-
+                    time.sleep(publishing_period / 1000.)
+    except Exception, e:
+        print("Exception occurred" + e.message)
+        exit(-1)
 
 if __name__ == '__main__':
     main(creds, publishing_period)
